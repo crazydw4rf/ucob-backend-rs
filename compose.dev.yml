@@ -1,0 +1,15 @@
+services:
+  pg-dev:
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: ucup123
+      POSTGRES_USER: ucup
+      POSTGRES_DB: ucob
+      PGDATA: /data
+    volumes:
+      - pgdata:/data:rw
+    ports:
+      - 127.0.0.1:5432:5432
+
+volumes:
+  pgdata:
