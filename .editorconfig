@@ -2,14 +2,7 @@
 indent_style = space
 indent_size = 4
 
-[*.rs]
+[{*.md,*.sql,*.rs,*.yaml,*.yml}]
 indent_style = space
 indent_size = 2
 
-[*.sql]
-indent_style = space
-indent_size = 2
-
-[*.md]
-indent_style = space
-indent_size = 2
