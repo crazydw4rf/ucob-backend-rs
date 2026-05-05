@@ -1,4 +1,26 @@
 services:
+  run-dev:
+    image: ucob-dev:local
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /project
+    env_file: .env.local
+    environment:
+      UCOB_APP_BIND: 0.0.0.0:3000
+      UCOB_DATABASE_URL: postgresql://ucup:ucup123@pg-dev:5432/ucob
+      DATABASE_URL: postgresql://ucup:ucup123@pg-dev:5432/ucob
+      CARGO_TARGET_DIR: /tmp/target
+      LOG_LEVEL: debug
+    volumes:
+      - ./:/project:ro
+      - cargo-cache:/usr/local/cargo:rw
+      - target-cache:/tmp/target:rw
+    ports:
+      - 127.0.0.1:3000:3000
+    networks:
+      - local-dev
+    command: -x run
   pg-dev:
     image: postgres:latest
     environment:
@@ -7,9 +29,16 @@ services:
       POSTGRES_DB: ucob
       PGDATA: /data
     volumes:
-      - pgdata:/data:rw
+      - pg-data:/data:rw
     ports:
-      - 127.0.0.1:5432:5432
+      - 127.0.0.1:5432:5432/tcp
+    networks:
+      - local-dev
 
 volumes:
-  pgdata:
+  pg-data:
+  cargo-cache:
+  target-cache:
+
+networks:
+  local-dev:

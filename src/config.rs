@@ -37,7 +37,7 @@ pub struct AppState {
 }
 
 pub async fn init_config() -> Result<Config> {
-  dotenvy::dotenv_override().ok();
+  dotenvy::dotenv().ok();
 
   let env: Env = envy::prefixed("UCOB_").from_env()?;
 
