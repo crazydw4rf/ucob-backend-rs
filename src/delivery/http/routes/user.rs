@@ -4,37 +4,35 @@ use axum::{
   http::StatusCode,
   routing::{get, post},
 };
+use utoipa_axum::router::OpenApiRouter;
 
 use crate::{
   config::AppState,
-  delivery::http::{HttpResponse, dto::UserCreate, response::FromStruct, routes::RoutePair},
-  error::Result,
-  models::{User, user::UserId},
+  delivery::http::{HttpResponse, dto::UserCreate, middleware::auth::UserInfo, routes::RouterPair},
+  models::User,
+  types::Result,
 };
 
-pub fn routes() -> RoutePair {
-  let protected_routes = Router::<AppState>::new().route("/me", get(user_me));
-  let public_routes = Router::<AppState>::new().route("/", post(user_create));
-
-  RoutePair::default()
-    .with_public(public_routes)
-    .with_protected(protected_routes)
+pub fn router() -> RouterPair<AppState> {
+  RouterPair::default()
+    .with_protected(OpenApiRouter::new().route("/me", get(user_me)))
+    .with_public(OpenApiRouter::new().route("/", post(user_create)))
 }
 
 async fn user_me(
   State(state): State<AppState>,
-  Extension(UserId(id)): Extension<UserId>,
+  Extension(info): Extension<UserInfo>,
 ) -> Result<HttpResponse<User>> {
-  let user = state.user_service.find_user(id).await?;
+  let user = state.user_service.find_user_by_id(info.id).await?;
 
-  Ok((FromStruct(user), StatusCode::OK).into())
+  Ok((user, StatusCode::OK).into())
 }
 
 async fn user_create(
   State(state): State<AppState>,
   Json(payload): Json<UserCreate>,
 ) -> Result<StatusCode> {
-  state.user_service.create_user(payload).await?;
+  state.user_service.new_user(payload).await?;
 
   Ok(StatusCode::CREATED)
 }

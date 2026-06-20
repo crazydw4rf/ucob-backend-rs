@@ -1,9 +1,13 @@
+use aws_config::BehaviorVersion;
 use serde::Deserialize;
 use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
 use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
 
-use crate::{error::Result, services::user::UserService};
+use crate::{
+  services::{transaction::TransactionService, user::UserService},
+  types::Result,
+};
 
 #[derive(Deserialize, Debug, Default)]
 pub struct Env {
@@ -13,6 +17,8 @@ pub struct Env {
   pub cookie_secure: bool,
   pub cookie_domain: String,
   pub access_token_exp_minutes: i64,
+  pub s3_endpoint_url: String,
+  pub s3_public_base_url: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -34,9 +40,10 @@ impl Default for Config {
 pub struct AppState {
   pub config: Arc<Config>,
   pub user_service: Arc<UserService>,
+  pub transaction_service: Arc<TransactionService>,
 }
 
-pub async fn init_config() -> Result<Config> {
+pub fn init_config() -> Result<Config> {
   dotenvy::dotenv().ok();
 
   let env: Env = envy::prefixed("UCOB_").from_env()?;
@@ -45,6 +52,16 @@ pub async fn init_config() -> Result<Config> {
     env,
     ..Default::default()
   })
+}
+
+pub async fn init_storage_service(cfg: &Config) -> aws_sdk_s3::Client {
+  let base_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
+  let config = aws_sdk_s3::config::Builder::from(&base_config)
+    .force_path_style(true)
+    .endpoint_url(&cfg.env.s3_endpoint_url)
+    .build();
+
+  aws_sdk_s3::Client::from_conf(config)
 }
 
 pub async fn init_db(cfg: &Config) -> Result<Pool<Postgres>> {

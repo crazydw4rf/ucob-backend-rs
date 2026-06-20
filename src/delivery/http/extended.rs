@@ -2,7 +2,7 @@ use axum::{Json, http::StatusCode, response::IntoResponse};
 use axum_extra::extract::CookieJar;
 use serde::Serialize;
 
-use crate::delivery::http::{HttpResponse, response::Metadata};
+use crate::delivery::http::HttpResponse;
 
 pub struct ExtendedHttpResponse<T> {
   response: HttpResponse<T>,
@@ -22,12 +22,6 @@ impl<T> ExtendedHttpResponse<T> {
 
     self
   }
-
-  pub fn with_meta(mut self, metadata: Metadata) -> Self {
-    self.response.meta = Some(metadata);
-
-    self
-  }
 }
 
 impl<T: Serialize> IntoResponse for ExtendedHttpResponse<T> {
@@ -42,10 +36,3 @@ impl<T: Serialize> IntoResponse for ExtendedHttpResponse<T> {
       .into_response()
   }
 }
-
-// impl<T: Serialize> From<AppError> for ExtendedHttpResponse<T> {
-//   fn from(value: AppError) -> Self {
-//     let response = HttpResponse::<T>::from(value);
-//     Self::new(response)
-//   }
-// }

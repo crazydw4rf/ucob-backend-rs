@@ -1,6 +1,13 @@
 use sqlx::{Pool, Postgres};
+use tracing::instrument;
 
-use crate::{error::Result, models::user::*};
+use crate::{
+  models::{
+    Id,
+    user::{User, UserRole},
+  },
+  types::Result,
+};
 
 // #[async_trait]
 // pub trait TUserRepository: Send + Sync {
@@ -17,11 +24,11 @@ impl UserRepository {
     Self { db }
   }
 
-  pub async fn find_by_id(&self, id: i32) -> Result<User> {
+  pub async fn find_by_id(&self, id: Id) -> Result<User> {
     let user = sqlx::query_as!(
       User,
-      r#"SELECT id, first_name, last_name, email, role AS "role: UserRole",password FROM users WHERE id = $1"#,
-      id
+      r#"SELECT id,first_name,last_name,email,role AS "role: UserRole",password,created_at FROM users WHERE id = $1 LIMIT 1"#,
+      id.0
     )
     .fetch_one(&self.db)
     .await?;
@@ -29,12 +36,12 @@ impl UserRepository {
     Ok(user)
   }
 
+  #[instrument(skip(self))]
   pub async fn find_by_email(&self, email: String) -> Result<User> {
-    let user = sqlx::query_as!(
-      User,
-      r#"SELECT id, first_name, last_name, email, role AS "role: UserRole",password FROM users WHERE email = $1"#,
-      email
+    let user: User = sqlx::query_as(
+      r#"SELECT id,first_name,last_name,email,role,password,created_at FROM users WHERE email = $1"#,
     )
+    .bind(email)
     .fetch_one(&self.db)
     .await?;
 
@@ -42,13 +49,13 @@ impl UserRepository {
   }
 
   pub async fn create(&self, user: User) -> Result<()> {
-    let _ = sqlx::query(
+    let _ = sqlx::query!(
       r#"INSERT INTO users (first_name,last_name,email,password) VALUES ($1,$2,$3,$4)"#,
+      user.first_name,
+      user.last_name,
+      user.email,
+      user.password,
     )
-    .bind(user.first_name)
-    .bind(user.last_name)
-    .bind(user.email)
-    .bind(user.password)
     .execute(&self.db)
     .await?;
 

@@ -12,6 +12,7 @@ services:
       DATABASE_URL: postgresql://ucup:ucup123@pg-dev:5432/ucob
       CARGO_TARGET_DIR: /tmp/target
       LOG_LEVEL: debug
+      TZ: Asia/Jakarta
     volumes:
       - ./:/project:ro
       - cargo-cache:/usr/local/cargo:rw
@@ -28,6 +29,8 @@ services:
       POSTGRES_USER: ucup
       POSTGRES_DB: ucob
       PGDATA: /data
+      TZ: Asia/Jakarta
+      PGTZ: Asia/Jakarta
     volumes:
       - pg-data:/data:rw
     ports:

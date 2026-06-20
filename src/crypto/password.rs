@@ -1,4 +1,5 @@
-use crate::error::{ErrorKind, Result};
+use crate::error::ErrorKind;
+use crate::types::Result;
 
 pub fn hash_password(password: &str) -> Result<String> {
   // NOTE: default cost nya 12 dari library dan makan waktu sekitar 500ms

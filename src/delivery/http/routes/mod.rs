@@ -1,62 +1,70 @@
-use axum::{Router, middleware};
-
-mod auth;
-mod user;
+use axum::middleware;
+use utoipa_axum::router::OpenApiRouter;
 
 use crate::{config::AppState, delivery::http::middleware::verify_token};
 
-#[derive(Default)]
-struct RoutePair {
-  protected: Option<Router<AppState>>,
-  public: Option<Router<AppState>>,
+mod auth;
+mod payment;
+mod transaction;
+mod user;
+
+struct RouterPair<S = ()> {
+  protected: Option<OpenApiRouter<S>>,
+  public: Option<OpenApiRouter<S>>,
 }
 
-enum RouteAccess {
-  Protected,
-  Public,
-}
-
-impl RoutePair {
-  fn with_public(mut self, router: Router<AppState>) -> Self {
-    self.public = Some(router);
-    self
+impl<S> Default for RouterPair<S>
+where
+  S: Send + Sync + Clone + 'static,
+{
+  fn default() -> Self {
+    Self {
+      public: None,
+      protected: None,
+    }
   }
+}
 
-  fn with_protected(mut self, router: Router<AppState>) -> Self {
+impl<S> RouterPair<S>
+where
+  S: Send + Sync + Clone + 'static,
+{
+  fn with_protected(mut self, router: OpenApiRouter<S>) -> Self {
     self.protected = Some(router);
     self
   }
 
-  fn nest_into(
-    self,
-    path: &str,
-    access: RouteAccess,
-    router: Router<AppState>,
-  ) -> Router<AppState> {
-    match access {
-      RouteAccess::Public => router.nest(path, self.public.unwrap_or_default()),
-      RouteAccess::Protected => router.nest(path, self.protected.unwrap_or_default()),
-    }
+  fn with_public(mut self, router: OpenApiRouter<S>) -> Self {
+    self.public = Some(router);
+    self
   }
 
-  fn nest_all_into(self, path: &str, router: Router<AppState>) -> Router<AppState> {
-    router
-      .nest(path, self.public.unwrap_or_default())
-      .nest(path, self.protected.unwrap_or_default())
+  fn get_all_router(self) -> (OpenApiRouter<S>, OpenApiRouter<S>) {
+    (
+      self.protected.unwrap_or(OpenApiRouter::new()),
+      self.public.unwrap_or(OpenApiRouter::new()),
+    )
   }
 }
 
-pub fn init_router(state: AppState) -> Router<AppState> {
-  let mut protected_router = Router::<AppState>::new();
-  let mut public_router = Router::<AppState>::new();
+pub fn init_router(state: AppState) -> OpenApiRouter<AppState> {
+  let (auth_protected, auth_public) = auth::router().get_all_router();
+  let (user_protected, user_public) = user::router().get_all_router();
+  let transaction_protected = transaction::router().protected.unwrap_or_default();
+  let (_, payment_public) = payment::router().get_all_router();
 
-  public_router = user::routes().nest_into("/users", RouteAccess::Public, public_router);
-  protected_router = user::routes().nest_into("/users", RouteAccess::Protected, protected_router);
+  let protected_router = OpenApiRouter::new()
+    .nest("/auth", auth_protected)
+    .nest("/users", user_protected)
+    .nest("/transaction", transaction_protected)
+    .layer(middleware::from_fn_with_state(state, verify_token));
 
-  public_router = auth::routes().nest_into("/auth", RouteAccess::Public, public_router);
-  protected_router = auth::routes().nest_into("/auth", RouteAccess::Protected, protected_router);
+  let public_router = OpenApiRouter::new()
+    .nest("/users", user_public)
+    .nest("/auth", auth_public)
+    .nest("/payment", payment_public);
 
-  protected_router = protected_router.layer(middleware::from_fn_with_state(state, verify_token));
-
-  Router::new().merge(protected_router).merge(public_router)
+  OpenApiRouter::new()
+    .merge(protected_router)
+    .merge(public_router)
 }

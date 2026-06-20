@@ -3,15 +3,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   Config,
-  error::{Error, Result},
+  error::Error,
   models::{User, user::UserRole},
+  types::Result,
 };
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Claims {
   pub exp: i64,
   pub sub: i32,
-  pub admin: bool,
+  pub is_admin: bool,
 }
 
 #[derive(Debug)]
@@ -26,7 +27,7 @@ pub fn jwt_encode(user: &User, secret: &str) -> Result<Tokens> {
 
   let claims = Claims {
     sub: user.id.0,
-    admin: user.role == UserRole::Admin,
+    is_admin: user.role == UserRole::Admin,
     exp: (chrono::Utc::now() + chrono::Duration::minutes(JWT_MINUTE_EXP)).timestamp(),
   };
 

@@ -1,42 +1,48 @@
-use axum::{Json, Router, extract::State, http::StatusCode, response::IntoResponse, routing::post};
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use axum_extra::extract::{
   CookieJar,
   cookie::{Cookie, SameSite},
 };
 
 use cookie::time::Duration;
+use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
   config::AppState,
   delivery::http::{
-    ExtendedHttpResponse, HttpResponse, dto::UserLogin, response::MessageResponse,
-    routes::RoutePair,
+    ExtendedHttpResponse, HttpResponse, dto::UserLogin, response::ErrorResponse, routes::RouterPair,
   },
-  error::Result,
+  types::Result,
 };
 
-pub fn routes() -> RoutePair {
-  let public_router = Router::new().route("/login", post(login_user));
-  let protected_router = Router::new().route("/logout", post(logout_user));
-
-  RoutePair::default()
-    .with_public(public_router)
-    .with_protected(protected_router)
+pub fn router() -> RouterPair<AppState> {
+  RouterPair::default()
+    .with_protected(OpenApiRouter::new().routes(routes!(user_logout)))
+    .with_public(OpenApiRouter::new().routes(routes!(user_login)))
 }
 
-async fn login_user(
+#[utoipa::path(
+  post,
+  path = "/login",
+  tag = "auth",
+  request_body = UserLogin,
+  responses(
+    (status = 200),
+    (status = 500, body = ErrorResponse)
+))]
+pub async fn user_login(
   State(state): State<AppState>,
   jar: CookieJar,
   Json(payload): Json<UserLogin>,
-) -> Result<ExtendedHttpResponse<MessageResponse>> {
+) -> Result<ExtendedHttpResponse<&'static str>> {
   let env = &state.config.env;
 
   let tokens = state
     .user_service
-    .login_user(payload, env.jwt_secret.as_ref())
+    .login_user(payload, &env.jwt_secret)
     .await?;
 
-  // TODO: buat fungsi untuk membuat cookie dan menghapus cookie
+  // TODO: buat fungsi untuk membuat dan menghapus cookie
   let cookie = Cookie::build(("token", tokens.access_token))
     .path("/")
     .domain(env.cookie_domain.clone())
@@ -46,13 +52,23 @@ async fn login_user(
     .max_age(Duration::minutes(env.access_token_exp_minutes));
 
   Ok(
-    HttpResponse::from(MessageResponse::Success("login success".into()))
+    HttpResponse::from(("login success", StatusCode::OK))
       .extend()
       .with_cookie(jar.add(cookie)),
   )
 }
 
-async fn logout_user(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
+#[utoipa::path(
+  post,
+  tag = "auth",
+  path = "/logout",
+  responses(
+    (status = 204),
+    (status = 400, description = "token not found"),
+    (status = 500, body = ErrorResponse)
+  )
+)]
+pub async fn user_logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
   let cookie = Cookie::build(("token", ""))
     .domain(state.config.env.cookie_domain.clone())
     .path("/");

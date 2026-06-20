@@ -5,7 +5,8 @@ use crate::{
   error::{Error, ErrorKind},
 };
 use axum::{Json, http::StatusCode, response::IntoResponse, response::Response};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
 pub trait Sanitizer {
   fn sanitize(&mut self) {}
@@ -14,36 +15,32 @@ pub trait Sanitizer {
 #[derive(Serialize)]
 pub struct NotOk;
 
-#[derive(Default, Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema, IntoParams)]
 pub struct Pagination {
-  total: i64,
-  skip: i64,
-  take: i64,
+  #[schema(example = 1)]
+  pub page: i64,
+  #[schema(example = 10)]
+  pub page_size: i64,
 }
 
-#[derive(Default, Debug, Serialize)]
-pub struct Metadata {
-  pagination: Option<Pagination>,
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ErrorResponse {
+  #[schema(example = false)]
+  pub success: bool,
+  #[schema(example = 500)]
+  pub code: u16,
+  pub error: Error,
 }
 
-#[derive(Serialize)]
-#[serde(untagged)]
-pub enum MessageResponse {
-  Success(Cow<'static, str>),
-  Error(Cow<'static, str>, ErrorKind),
-}
-
-pub struct FromStruct<T: Sanitizer>(pub T);
-
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct HttpResponse<T> {
   pub success: bool,
+  #[schema(example = 200)]
   pub code: u16,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub data: Option<T>,
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub meta: Option<Metadata>,
-  #[serde(skip_serializing_if = "Option::is_none")]
+  #[schema(ignore)]
   pub error: Option<Error>,
 }
 
@@ -53,7 +50,6 @@ impl<T: Serialize> HttpResponse<T> {
       success: true,
       code: status_code.into(),
       data: Some(data),
-      meta: None,
       error: None,
     }
   }
@@ -66,7 +62,6 @@ impl<T: Serialize> HttpResponse<T> {
         kind,
       }),
       data: None,
-      meta: None,
       code: ErrorKind::into_status_code(kind).into(),
     }
   }
@@ -76,14 +71,17 @@ impl<T: Serialize> HttpResponse<T> {
   }
 }
 
-impl<T> IntoResponse for HttpResponse<T>
-where
-  T: Serialize,
-{
+impl<T: Serialize> IntoResponse for HttpResponse<T> {
   fn into_response(self) -> Response {
     let code = StatusCode::from_u16(self.code).unwrap_or(StatusCode::OK);
 
     (code, Json(self)).into_response()
+  }
+}
+
+impl<T: Serialize> From<(T, StatusCode)> for HttpResponse<T> {
+  fn from((data, status): (T, StatusCode)) -> Self {
+    Self::new_success(data, status)
   }
 }
 
@@ -93,35 +91,40 @@ impl<T: Serialize> From<Error> for HttpResponse<T> {
   }
 }
 
-impl From<(MessageResponse, StatusCode)> for HttpResponse<MessageResponse> {
-  fn from(value: (MessageResponse, StatusCode)) -> Self {
-    match value.0 {
-      MessageResponse::Success(msg) => Self::new_success(MessageResponse::Success(msg), value.1),
-      MessageResponse::Error(msg, kind) => Self::new_error(msg, kind),
-    }
+impl<T: Serialize> From<(Cow<'static, str>, ErrorKind)> for HttpResponse<T> {
+  fn from((message, kind): (Cow<'static, str>, ErrorKind)) -> Self {
+    Self::new_error(message, kind)
   }
 }
 
-impl From<MessageResponse> for HttpResponse<MessageResponse> {
-  fn from(value: MessageResponse) -> Self {
-    (value, StatusCode::OK).into()
-  }
-}
+pub struct FromStruct<T: Sanitizer>(pub T);
 
 impl<T> From<(FromStruct<T>, StatusCode)> for HttpResponse<T>
 where
   T: Serialize + Sanitizer,
 {
-  fn from(value: (FromStruct<T>, StatusCode)) -> Self {
-    let mut data = value.0.0;
-    data.sanitize();
-
-    Self::new_success(data, value.1)
+  fn from((mut data, code): (FromStruct<T>, StatusCode)) -> Self {
+    data.0.sanitize();
+    Self::new_success(data.0, code)
   }
 }
 
-impl<T: Serialize> From<(Cow<'static, str>, ErrorKind)> for HttpResponse<T> {
-  fn from(value: (Cow<'static, str>, ErrorKind)) -> Self {
-    Self::new_error(value.0, value.1)
+pub struct FromVector<T>(pub Vec<T>);
+
+impl<T> From<(FromVector<T>, StatusCode)> for HttpResponse<Vec<T>>
+where
+  T: Serialize + Sanitizer,
+{
+  fn from((data, status): (FromVector<T>, StatusCode)) -> Self {
+    let a = data
+      .0
+      .into_iter()
+      .map(|mut e| {
+        e.sanitize();
+        e
+      })
+      .collect();
+
+    Self::new_success(a, status)
   }
 }
