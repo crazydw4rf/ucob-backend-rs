@@ -1,7 +1,0 @@
-[package]
-name = "pakasir-sdk"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-reqwest = { version = "0.13.4", features = ["json"] }

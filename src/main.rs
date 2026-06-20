@@ -7,21 +7,19 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
-  config::AppState,
-  docs::ApiDoc,
-  repository::{OilTransactionRepository, user::UserRepository},
-  services::{transaction::TransactionService, user::UserService},
+  config::AppState, docs::ApiDoc, repository::user::UserRepository, services::user::UserService,
 };
 
 mod config;
 mod crypto;
 mod delivery;
 mod docs;
+mod third_party;
 mod error;
 mod helper;
 mod models;
+mod prelude;
 mod repository;
-mod seeder;
 mod services;
 mod types;
 
@@ -33,12 +31,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let app_bind = cfg.env.app_bind.clone();
 
   let user_repo = Arc::new(UserRepository::new(db_conn.clone()));
-  let oil_repo = Arc::new(OilTransactionRepository::new(db_conn.clone()));
+  // let oil_repo = Arc::new(OilTransactionRepository::new(db_conn.clone()));
 
   let state = AppState {
     config: Arc::new(cfg),
     user_service: Arc::new(UserService::new(user_repo)),
-    transaction_service: Arc::new(TransactionService::new(oil_repo)),
+    // transaction_service: Arc::new(TransactionService::new(oil_repo)),
   };
 
   let router = delivery::http::routes::init_router(state.clone());

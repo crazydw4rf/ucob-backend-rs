@@ -12,7 +12,7 @@ use crate::{
   delivery::http::{
     ExtendedHttpResponse, HttpResponse, dto::UserLogin, response::ErrorResponse, routes::RouterPair,
   },
-  types::Result,
+  types::{JsonPayload, Result},
 };
 
 pub fn router() -> RouterPair<AppState> {
@@ -33,13 +33,14 @@ pub fn router() -> RouterPair<AppState> {
 pub async fn user_login(
   State(state): State<AppState>,
   jar: CookieJar,
-  Json(payload): Json<UserLogin>,
+  payload: JsonPayload<UserLogin>,
 ) -> Result<ExtendedHttpResponse<&'static str>> {
+  let payload = payload?.0;
   let env = &state.config.env;
 
   let tokens = state
     .user_service
-    .login_user(payload, &env.jwt_secret)
+    .login_user(payload.email, payload.password, &state.config)
     .await?;
 
   // TODO: buat fungsi untuk membuat dan menghapus cookie

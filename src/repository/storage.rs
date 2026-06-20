@@ -1,8 +1,9 @@
+use crate::prelude::*;
 use tracing::instrument;
 
-use crate::types::Result;
-
-const PRESIGNED_EXPIRATION_TIME_SECS: u64 = 180;
+// NOTE: hardcoded? Atau tambhakan aja ke struct config buat atur waktu kadaluwarsa URL untuk unggah
+// ke object storage.
+const PRESIGNED_EXPIRATION_TIME_SECS: u64 = 240;
 
 pub struct StorageRepository {
   client: aws_sdk_s3::Client,

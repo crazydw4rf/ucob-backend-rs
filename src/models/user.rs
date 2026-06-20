@@ -1,10 +1,10 @@
-use crate::error::Error;
 use crate::{delivery::http::response::Sanitizer, models::Id};
 use chrono::NaiveDateTime;
-use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone, Copy, PartialEq, sqlx::Type)]
+#[derive(
+  Debug, Default, Serialize, Deserialize, Clone, Copy, PartialEq, sqlx::Type, utoipa::ToSchema,
+)]
 #[sqlx(type_name = "user_role")]
 pub enum UserRole {
   Admin,
@@ -12,20 +12,14 @@ pub enum UserRole {
   User,
 }
 
-#[derive(Debug, Default, Builder, Serialize, sqlx::FromRow)]
-#[builder(setter(into), build_fn(error = "Error"))]
+#[derive(Debug, Default, Serialize, sqlx::FromRow, utoipa::ToSchema)]
 pub struct User {
-  #[builder(default)]
   pub id: Id,
-  pub first_name: String,
-  pub last_name: Option<String>,
+  pub username: String,
   pub email: String,
   #[serde(skip_serializing_if = "Option::is_none")]
-  #[builder(setter(strip_option))]
   pub password: Option<String>,
-  #[builder(default)]
   pub role: UserRole,
-  #[builder(default)]
   pub created_at: Option<NaiveDateTime>,
 }
 
@@ -33,4 +27,31 @@ impl Sanitizer for User {
   fn sanitize(&mut self) {
     self.password = None;
   }
+}
+
+#[derive(Debug, Default, Serialize, sqlx::FromRow, utoipa::ToSchema)]
+pub struct UserAddress {
+  pub id: Id,
+  pub district: String,
+  pub village: String,
+  pub details: String,
+}
+
+impl Sanitizer for UserAddress {}
+
+pub struct NewUser {
+  pub username: String,
+  pub email: String,
+  pub password: String,
+}
+
+pub struct LoginUser {
+  pub email: String,
+  pub password: String,
+}
+
+pub struct NewUserAddress {
+  pub district: String,
+  pub village: String,
+  pub details: String,
 }

@@ -5,11 +5,20 @@ CREATE TYPE oil_price_type AS ENUM ('BUY', 'SELL');
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
+  username TEXT NOT NULL,
   role user_role NOT NULL DEFAULT 'User',
-  first_name TEXT NOT NULL,
-  last_name TEXT NULL,
   password TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE address (
+  id SERIAL PRIMARY KEY,
+  user_id INT UNIQUE NOT NULL,
+  district VARCHAR(32) NOT NULL, -- Purwokerto Utara
+  village VARCHAR(32) NOT NULL, -- Purwanegara
+  details TEXT NOT NULL, -- nama jalan, nomor rumah, nama gang, dll
+
+  FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
 CREATE TABLE oil_purchases (
@@ -17,7 +26,6 @@ CREATE TABLE oil_purchases (
   user_id INTEGER NOT NULL,
   oil_volume REAL NOT NULL,
   delivery_address TEXT NOT NULL,
-  -- payment_proof_url TEXT NOT NULL,
   status transaction_status NOT NULL DEFAULT 'Pending',
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),

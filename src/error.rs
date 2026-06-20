@@ -3,12 +3,13 @@ use aws_sdk_s3::{error::SdkError, presigning::PresigningConfigError};
 use axum::{extract::rejection::JsonRejection, http::StatusCode, response::IntoResponse};
 use bcrypt::BcryptError;
 use core::fmt;
-use derive_builder::UninitializedFieldError;
 use jsonwebtoken::errors::ErrorKind as JwtErrorKind;
 use serde::Serialize;
 use sqlx::error::ErrorKind as SqlxErrorKind;
 use std::borrow::Cow;
 use utoipa::ToSchema;
+
+// TODO: tambahin thiserror pada enum ErrorKind
 
 #[derive(Debug, Serialize, Copy, Clone, ToSchema)]
 pub enum ErrorKind {
@@ -19,25 +20,26 @@ pub enum ErrorKind {
   SessionExpired,
   TokenInvalid,
   CredentialsInvalid,
-  FieldBuilder,
   HashingPassword,
   ServiceInit,
   StorageService,
   BadRequest,
+  UnprocessableEntity,
 }
 
 impl ErrorKind {
   pub fn into_status_code(self) -> StatusCode {
     match self {
       ErrorKind::InternalServer
-      | ErrorKind::FieldBuilder
       | ErrorKind::HashingPassword
       | ErrorKind::ServiceInit
       | ErrorKind::StorageService => StatusCode::INTERNAL_SERVER_ERROR,
       ErrorKind::TokenInvalid | ErrorKind::BadRequest => StatusCode::BAD_REQUEST,
       ErrorKind::SessionExpired | ErrorKind::CredentialsInvalid => StatusCode::UNAUTHORIZED,
       ErrorKind::ResourceConflict => StatusCode::CONFLICT,
-      ErrorKind::ForeignKeyViolation => StatusCode::UNPROCESSABLE_ENTITY,
+      ErrorKind::ForeignKeyViolation | ErrorKind::UnprocessableEntity => {
+        StatusCode::UNPROCESSABLE_ENTITY
+      }
       ErrorKind::NotFound => StatusCode::NOT_FOUND,
     }
   }
@@ -107,7 +109,10 @@ impl From<sqlx::Error> for Error {
         ErrorKind::InternalServer,
       ),
       sqlx::Error::RowNotFound => Self::new("no record found", ErrorKind::NotFound),
-      _ => Self::new("database error", ErrorKind::InternalServer),
+      _ => Self::new(
+        format!("database error: {}", error),
+        ErrorKind::InternalServer,
+      ),
     }
   }
 }
@@ -146,15 +151,6 @@ impl From<BcryptError> for Error {
         ..Self::default()
       },
     }
-  }
-}
-
-impl From<UninitializedFieldError> for Error {
-  fn from(value: UninitializedFieldError) -> Self {
-    Self::new(
-      format!("field {} not initialized", value.field_name()),
-      ErrorKind::FieldBuilder,
-    )
   }
 }
 
@@ -210,6 +206,24 @@ impl From<url::ParseError> for Error {
   fn from(value: url::ParseError) -> Self {
     Self::new(
       format!("Failed to parsing url: {}", value),
+      ErrorKind::InternalServer,
+    )
+  }
+}
+
+impl From<reqwest::Error> for Error {
+  fn from(value: reqwest::Error) -> Self {
+    Self::new(
+      format!("failed to execute HTTP request: {value}"),
+      ErrorKind::InternalServer,
+    )
+  }
+}
+
+impl From<serde_json::Error> for Error {
+  fn from(value: serde_json::Error) -> Self {
+    Self::new(
+      format!("serde_json error: {value}"),
       ErrorKind::InternalServer,
     )
   }
