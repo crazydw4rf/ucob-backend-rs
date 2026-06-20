@@ -1,4 +1,4 @@
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{extract::State, http::StatusCode, response::IntoResponse};
 use axum_extra::extract::{
   CookieJar,
   cookie::{Cookie, SameSite},
@@ -23,6 +23,7 @@ pub fn router() -> RouterPair<AppState> {
 
 #[utoipa::path(
   post,
+  description = "User login",
   path = "/login",
   tag = "auth",
   request_body = UserLogin,
@@ -61,6 +62,7 @@ pub async fn user_login(
 
 #[utoipa::path(
   post,
+  description = "User logout",
   tag = "auth",
   path = "/logout",
   responses(

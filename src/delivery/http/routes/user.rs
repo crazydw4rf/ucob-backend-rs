@@ -1,5 +1,4 @@
 use axum::{
-  Json,
   extract::{Extension, State},
   http::StatusCode,
 };
@@ -31,6 +30,7 @@ pub fn router() -> RouterPair<AppState> {
 
 #[utoipa::path(
   get,
+  description = "Mengambil data pengguna yang sedang login",
   path = "/me",
   tag = "user",
   responses(
@@ -48,6 +48,7 @@ async fn user_me(
 
 #[utoipa::path(
   post,
+  description = "Membuat pengguna baru",
   path = "/",
   tag = "user",
   request_body = UserCreate,
@@ -60,6 +61,7 @@ async fn user_create(
   payload: JsonPayload<UserCreate>,
 ) -> Result<StatusCode> {
   let payload = payload?.0;
+
   state
     .user_service
     .new_user(NewUser {
@@ -74,6 +76,7 @@ async fn user_create(
 
 #[utoipa::path(
   post,
+  description = "Menambahkan alamat pengguna",
   path = "/address",
   tag = "user",
   request_body = UserAddressCreate,
@@ -100,12 +103,12 @@ async fn address_create(
     )
     .await?;
 
-  // NOTE: atau mending pake struct khusus buat response nya aja?
   Ok((FromStruct(res), StatusCode::OK).into())
 }
 
 #[utoipa::path(
   get,
+  description = "Mengambil alamat pengguna yang sedang login",
   path = "/address",
   tag = "user",
   responses(

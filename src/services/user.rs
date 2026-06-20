@@ -36,7 +36,7 @@ impl UserService {
 
     data.password = password_hash;
 
-    self.user_repo.create(data).await?;
+    let _ = self.user_repo.create(data).await?;
 
     Ok(())
   }

@@ -41,8 +41,8 @@ where
 
   fn get_all_router(self) -> (OpenApiRouter<S>, OpenApiRouter<S>) {
     (
-      self.protected.unwrap_or(OpenApiRouter::new()),
-      self.public.unwrap_or(OpenApiRouter::new()),
+      self.protected.unwrap_or_default(),
+      self.public.unwrap_or_default(),
     )
   }
 }

@@ -59,15 +59,15 @@ impl UserRepository {
     Ok(password)
   }
 
-  pub async fn create(&self, user: NewUser) -> Result<User> {
-    let user = sqlx::query_as(r#"INSERT INTO users (username,email,password) VALUES ($1,$2,$3)"#)
+  pub async fn create(&self, user: NewUser) -> Result<()> {
+    let _ = sqlx::query(r#"INSERT INTO users (username,email,password) VALUES ($1,$2,$3)"#)
       .bind(user.username)
       .bind(user.email)
       .bind(user.password)
-      .fetch_one(&self.db)
+      .execute(&self.db)
       .await?;
 
-    Ok(user)
+    Ok(())
   }
 
   // TODO:  update data user

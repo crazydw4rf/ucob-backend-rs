@@ -1,5 +1,4 @@
 use axum::{Json, extract::State, http::StatusCode};
-use tracing::instrument;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
@@ -21,10 +20,9 @@ pub fn router() -> RouterPair<AppState> {
   responses(
     (status = 200)
 ))]
-#[instrument(skip(state))]
 async fn payment_webhook(
-  state: State<AppState>,
-  payload: Json<PaymentWebhookPayload>,
+  _state: State<AppState>,
+  _payload: Json<PaymentWebhookPayload>,
 ) -> Result<StatusCode> {
   tracing::debug!("new success payment");
   Ok(StatusCode::OK)
