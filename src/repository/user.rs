@@ -2,9 +2,8 @@ use sqlx::{Pool, Postgres};
 use tracing::instrument;
 
 use crate::{
-  delivery::http::dto::{UserAddressCreate, UserCreate},
   models::{
-    Id, NewUser, NewUserAddress, UserAddress,
+    NewUser, NewUserAddress, UserAddress, UserId,
     user::{User, UserRole},
   },
   types::Result,
@@ -25,7 +24,7 @@ impl UserRepository {
     Self { db }
   }
 
-  pub async fn find_by_id(&self, id: Id) -> Result<User> {
+  pub async fn find_by_id(&self, id: UserId) -> Result<User> {
     let user = sqlx::query_as!(
       User,
       r#"SELECT id,username,email,role AS "role: UserRole",password,created_at FROM users WHERE id = $1 LIMIT 1"#,
@@ -72,7 +71,7 @@ impl UserRepository {
 
   // TODO:  update data user
 
-  pub async fn create_address(&self, user_id: Id, addr: NewUserAddress) -> Result<UserAddress> {
+  pub async fn create_address(&self, user_id: UserId, addr: NewUserAddress) -> Result<UserAddress> {
     let address = sqlx::query_as!(
       UserAddress,
       "INSERT INTO address (user_id,district,village,details) VALUES($1,$2,$3,$4) RETURNING id,district,village,details",
@@ -87,7 +86,7 @@ impl UserRepository {
     Ok(address)
   }
 
-  pub async fn find_address_by_user_id(&self, user_id: Id) -> Result<UserAddress> {
+  pub async fn find_address_by_user_id(&self, user_id: UserId) -> Result<UserAddress> {
     let address = sqlx::query_as!(
       UserAddress,
       "SELECT ad.id,ad.district,ad.village,ad.details FROM address ad JOIN users u ON ad.user_id = u.id WHERE u.id = $1",

@@ -5,7 +5,7 @@ use crate::{config::AppState, delivery::http::middleware::verify_token};
 
 mod auth;
 mod payment;
-// mod transaction;
+mod transaction;
 mod user;
 
 struct RouterPair<S = ()> {
@@ -50,13 +50,13 @@ where
 pub fn init_router(state: AppState) -> OpenApiRouter<AppState> {
   let (auth_protected, auth_public) = auth::router().get_all_router();
   let (user_protected, user_public) = user::router().get_all_router();
-  // let transaction_protected = transaction::router().protected.unwrap_or_default();
-  let (_, payment_public) = payment::router().get_all_router();
+  let transaction_protected = transaction::router().protected.unwrap_or_default();
+  let payment_public = payment::router().public.unwrap_or_default();
 
   let protected_router = OpenApiRouter::new()
     .nest("/auth", auth_protected)
     .nest("/users", user_protected)
-    // .nest("/transaction", transaction_protected)
+    .nest("/transaction", transaction_protected)
     .layer(middleware::from_fn_with_state(state, verify_token));
 
   let public_router = OpenApiRouter::new()

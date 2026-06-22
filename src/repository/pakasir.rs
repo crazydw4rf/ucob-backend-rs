@@ -38,7 +38,7 @@ impl PakasirRepository {
 
     // NOTE: buat data type baru untuk menangani error dari http api request
     if !res.status().is_success() {
-      tracing::error!("pakasir api request error: {:?}", res.error_for_status());
+      tracing::error!("pakasir api request error: {:?}", res.text().await?);
       return Err(ERROR_NO_SUCCESS_CODE);
     }
 
@@ -108,7 +108,7 @@ mod tests {
       .create_transaction(TransactionCreateRequest {
         project: cfg.env.pakasir_project_name.clone(),
         api_key: cfg.env.pakasir_api_key.clone(),
-        order_id: "DAPURBUR-1006".to_string(),
+        order_id: "DAPURBUR-1007".to_string(),
         amount: 10000,
         method: "qris".to_string(),
       })

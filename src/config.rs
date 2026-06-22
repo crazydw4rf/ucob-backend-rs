@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
 
 use crate::{
-  services::user::UserService,
+  services::{transaction::TransactionService, user::UserService},
   types::{Result, StorageUploadConfig},
 };
 
@@ -48,7 +48,7 @@ pub const OIL_PHOTO_UPLOAD_CONFIG: StorageUploadConfig = StorageUploadConfig {
 pub struct AppState {
   pub config: Arc<Config>,
   pub user_service: Arc<UserService>,
-  // pub transaction_service: Arc<TransactionService>,
+  pub transaction_service: Arc<TransactionService>,
 }
 
 pub fn init_config() -> Result<Config> {

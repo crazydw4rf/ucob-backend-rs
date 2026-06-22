@@ -1,5 +1,6 @@
-use crate::{delivery::http::response::Sanitizer, models::Id};
+use crate::delivery::http::response::Sanitizer;
 use chrono::NaiveDateTime;
+use derive_more::From;
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -12,9 +13,15 @@ pub enum UserRole {
   User,
 }
 
+#[derive(
+  Serialize, Deserialize, From, Debug, Default, Clone, Copy, PartialEq, sqlx::Type, utoipa::ToSchema,
+)]
+#[sqlx(transparent)]
+pub struct UserId(pub i32);
+
 #[derive(Debug, Default, Serialize, sqlx::FromRow, utoipa::ToSchema)]
 pub struct User {
-  pub id: Id,
+  pub id: UserId,
   pub username: String,
   pub email: String,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -31,7 +38,7 @@ impl Sanitizer for User {
 
 #[derive(Debug, Default, Serialize, sqlx::FromRow, utoipa::ToSchema)]
 pub struct UserAddress {
-  pub id: Id,
+  pub id: UserId,
   pub district: String,
   pub village: String,
   pub details: String,

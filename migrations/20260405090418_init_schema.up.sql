@@ -1,6 +1,9 @@
 CREATE TYPE user_role AS ENUM ('Admin', 'User');
 CREATE TYPE transaction_status AS ENUM ('Pending', 'Verified', 'Rejected', 'Accepted');
-CREATE TYPE oil_price_type AS ENUM ('BUY', 'SELL');
+CREATE TYPE transaction_type AS ENUM ('Purchase', 'Sale');
+CREATE TYPE payment_method AS ENUM ('Qris', 'Cod');
+CREATE TYPE payment_status AS ENUM ('Pending','Completed');
+CREATE TYPE price_type AS ENUM ('Buy', 'Sell');
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -21,48 +24,44 @@ CREATE TABLE address (
   FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
-CREATE TABLE oil_purchases (
+CREATE TABLE payment (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL,
-  oil_volume REAL NOT NULL,
-  delivery_address TEXT NOT NULL,
-  status transaction_status NOT NULL DEFAULT 'Pending',
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  amount INT NOT NULL,
+  order_id VARCHAR(64) UNIQUE NOT NULL,
+  payment_method payment_method NOT NULL DEFAULT 'Qris'::payment_method,
+  status payment_status NOT NULL DEFAULT 'Pending'::payment_status,
+  completed_at TIMESTAMP NULL
 );
 
-CREATE TABLE oil_sales (
+CREATE TABLE transaction (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL,
+  user_id INT NOT NULL,
+  payment_id INT UNIQUE NULL,
   oil_volume REAL NOT NULL,
-  pickup_address TEXT NOT NULL,
-  status transaction_status NOT NULL DEFAULT 'Pending',
+  status transaction_status NOT NULL DEFAULT 'Pending'::transaction_status,
+  type transaction_type NOT NULL DEFAULT 'Purchase'::transaction_type,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
 
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY(user_id) REFERENCES users(id),
+  FOREIGN KEY(payment_id) REFERENCES payment(id)
 );
 
-CREATE TABLE purchases_payment (
-  id SERIAL PRIMARY KEY
+CREATE TABLE transaction_address (
+  id SERIAL PRIMARY KEY,
+  district VARCHAR(32) NOT NULL, -- Purwokerto Utara
+  village VARCHAR(32) NOT NULL, -- Purwanegara
+  details TEXT NOT NULL -- nama jalan, nomor rumah, nama gang, dll
 );
 
-CREATE TABLE sales_payment (
-  id SERIAL PRIMARY KEY
+CREATE TABLE oil (
+  id SERIAL PRIMARY KEY,
+  delta REAL NOT NULL,
+  created_at TIMESTAMP NOT NULL
 );
 
 CREATE TABLE oil_prices (
   id SERIAL PRIMARY KEY,
-  price_per_liter REAL NOT NULL,
-  price_type oil_price_type NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
+  type price_type NOT NULL DEFAULT 'Buy'::price_type,
+  price_per_liter INT NOT NULL
 );
 
--- NOTE: apakah perlu di catat atau tambahkan column id transaksi untuk transaksi terkahir yang mengubah nilai stock?
-CREATE TABLE oil_stocks (
-  id SERIAL PRIMARY KEY,
-  delta REAL NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
-);

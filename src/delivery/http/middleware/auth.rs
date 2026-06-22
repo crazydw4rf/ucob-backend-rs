@@ -5,11 +5,13 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 
-use crate::{config::AppState, crypto::jwt_decode, error::ErrorKind, models::Id, types::Result};
+use crate::{
+  config::AppState, crypto::jwt_decode, error::ErrorKind, models::UserId, types::Result,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct UserInfo {
-  pub id: Id,
+  pub id: UserId,
   pub is_admin: bool,
 }
 
@@ -32,7 +34,7 @@ pub async fn verify_token(
   tracing::debug!("decoded jwt: {:?}", t_dec);
 
   req.extensions_mut().insert(UserInfo {
-    id: Id(t_dec.sub),
+    id: UserId(t_dec.sub),
     is_admin: t_dec.is_admin,
   });
 
