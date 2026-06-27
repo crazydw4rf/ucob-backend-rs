@@ -11,6 +11,7 @@ use utoipa::OpenApi;
     (name = "user", description = "User API endpoints"),
     (name = "auth", description = "Auth API endpoints"),
     (name = "transaction", description = "Transaction API endpoints"),
+    (name = "oil", description = "Oil API endpoints"),
     (name = "payment", description = "Payment API endpoints"),
   ),
 )]

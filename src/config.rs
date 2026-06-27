@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
 
 use crate::{
-  services::{transaction::TransactionService, user::UserService},
+  services::{OilService, StorageService, transaction::TransactionService, user::UserService},
   types::{Result, StorageUploadConfig},
 };
 
@@ -18,9 +18,7 @@ pub struct Env {
   pub cookie_domain: String,
   pub access_token_exp_minutes: i64,
   pub s3_endpoint_url: String,
-  pub s3_public_base_url: String,
   pub pakasir_api_key: String,
-  pub pakasir_project_name: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -47,7 +45,9 @@ pub const OIL_PHOTO_UPLOAD_CONFIG: StorageUploadConfig = StorageUploadConfig {
 #[derive(Clone)]
 pub struct AppState {
   pub config: Arc<Config>,
+  pub oil_service: Arc<OilService>,
   pub user_service: Arc<UserService>,
+  pub storage_service: Arc<StorageService>,
   pub transaction_service: Arc<TransactionService>,
 }
 

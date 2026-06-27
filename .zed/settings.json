@@ -1,3 +1,5 @@
 {
-    "tab_size": 2
+  "tab_size": 2,
+  "load_direnv": "direct",
+  "semantic_tokens": "combined",
 }

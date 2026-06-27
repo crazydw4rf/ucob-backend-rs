@@ -1,11 +1,8 @@
+use crate::{prelude::*, third_party::pakasir::PakasirWebhookPayload};
 use axum::{Json, extract::State, http::StatusCode};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
-use crate::{
-  config::AppState,
-  delivery::http::{dto::payment::PakasirWebhookPayload, routes::RouterPair},
-  types::Result,
-};
+use crate::{config::AppState, delivery::http::routes::RouterPair};
 
 pub fn router() -> RouterPair<AppState> {
   RouterPair::default().with_public(OpenApiRouter::new().routes(routes!(payment_webhook)))
@@ -21,9 +18,24 @@ pub fn router() -> RouterPair<AppState> {
     (status = 200)
 ))]
 async fn payment_webhook(
-  _state: State<AppState>,
-  _payload: Json<PakasirWebhookPayload>,
+  state: State<AppState>,
+  payload: Json<PakasirWebhookPayload>,
 ) -> Result<StatusCode> {
-  tracing::debug!("new success payment");
+  // NOTE: atau jika webhook di call oleh pakasir maka akan terjamin jika transaksi tersebut selesai dan berhasil dibayar?
+  // jadi apakah perlu cek tambahan?
+  if !payload.status.contains("completed") {
+    return Err(Error::new("transaksi belum selesai", ErrorKind::BadRequest));
+  }
+
+  tracing::debug!("{:?}", &payload.0);
+
+  let _ = state
+    .transaction_service
+    .update_transaction_payment_status_by_order_id(
+      &payload.order_id,
+      &state.config.env.pakasir_api_key,
+    )
+    .await?;
+
   Ok(StatusCode::OK)
 }

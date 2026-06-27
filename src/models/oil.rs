@@ -1,12 +1,33 @@
-// use chrono::NaiveDateTime;
-// use serde::Serialize;
-// use utoipa::ToSchema;
-//
-// use crate::{
-//   delivery::http::response::Sanitizer,
-//   models::{Id, TransactionStatus},
-// };
-//
+use crate::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Default, Serialize, sqlx::FromRow, utoipa::ToSchema)]
+pub struct Oil {
+  pub delta: f32,
+  pub created_at: Option<chrono::NaiveDateTime>,
+}
+
+impl Sanitizer for Oil {}
+
+#[derive(Debug, Default, Serialize, sqlx::FromRow, utoipa::ToSchema)]
+pub struct OilPrices {
+  pub price_type: PriceType,
+  pub price_per_liter: i32,
+  pub created_at: Option<chrono::NaiveDateTime>,
+}
+
+impl Sanitizer for OilPrices {}
+
+#[derive(
+  Debug, Default, Serialize, Deserialize, Clone, Copy, PartialEq, sqlx::Type, utoipa::ToSchema,
+)]
+#[sqlx(type_name = "price_type")]
+pub enum PriceType {
+  #[default]
+  Buy,
+  Sell,
+}
+
 // #[derive(Debug, Default, Serialize, sqlx::FromRow, ToSchema)]
 // pub struct OilPurchase {
 //   pub id: Id,

@@ -49,15 +49,6 @@ impl UserRepository {
     Ok(user)
   }
 
-  #[instrument(skip(self))]
-  pub async fn find_password_by_email(&self, email: String) -> Result<String> {
-    let password = sqlx::query_scalar!(r#"SELECT password FROM users WHERE email = $1"#, email)
-      .fetch_one(&self.db)
-      .await?;
-
-    Ok(password)
-  }
-
   pub async fn create(&self, user: NewUser) -> Result<()> {
     let _ = sqlx::query(r#"INSERT INTO users (username,email,password) VALUES ($1,$2,$3)"#)
       .bind(user.username)

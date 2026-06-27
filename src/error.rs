@@ -24,7 +24,6 @@ pub enum ErrorKind {
   ServiceInit,
   StorageService,
   BadRequest,
-  UnprocessableEntity,
 }
 
 impl ErrorKind {
@@ -37,9 +36,7 @@ impl ErrorKind {
       ErrorKind::TokenInvalid | ErrorKind::BadRequest => StatusCode::BAD_REQUEST,
       ErrorKind::SessionExpired | ErrorKind::CredentialsInvalid => StatusCode::UNAUTHORIZED,
       ErrorKind::ResourceConflict => StatusCode::CONFLICT,
-      ErrorKind::ForeignKeyViolation | ErrorKind::UnprocessableEntity => {
-        StatusCode::UNPROCESSABLE_ENTITY
-      }
+      ErrorKind::ForeignKeyViolation => StatusCode::UNPROCESSABLE_ENTITY,
       ErrorKind::NotFound => StatusCode::NOT_FOUND,
     }
   }

@@ -4,6 +4,7 @@ use utoipa_axum::router::OpenApiRouter;
 use crate::{config::AppState, delivery::http::middleware::verify_token};
 
 mod auth;
+mod oil;
 mod payment;
 mod transaction;
 mod user;
@@ -51,12 +52,14 @@ pub fn init_router(state: AppState) -> OpenApiRouter<AppState> {
   let (auth_protected, auth_public) = auth::router().get_all_router();
   let (user_protected, user_public) = user::router().get_all_router();
   let transaction_protected = transaction::router().protected.unwrap_or_default();
+  let oil_protected = oil::router().protected.unwrap_or_default();
   let payment_public = payment::router().public.unwrap_or_default();
 
   let protected_router = OpenApiRouter::new()
     .nest("/auth", auth_protected)
     .nest("/users", user_protected)
     .nest("/transaction", transaction_protected)
+    .nest("/oil", oil_protected)
     .layer(middleware::from_fn_with_state(state, verify_token));
 
   let public_router = OpenApiRouter::new()

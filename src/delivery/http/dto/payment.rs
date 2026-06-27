@@ -1,12 +1,2 @@
-use serde::Deserialize;
-use utoipa::ToSchema;
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct PakasirWebhookPayload {
-  pub amount: i32,
-  pub order_id: String,
-  pub project: String,
-  pub status: String,         // completed
-  pub payment_method: String, // qris
-  pub completed_at: String,
-}
+// #[derive(Debug, serde::Deserialize, utoipa::ToSchema)]
+// pub struct PaymentCreateRequest {}

@@ -52,11 +52,6 @@ pub struct NewUser {
   pub password: String,
 }
 
-pub struct LoginUser {
-  pub email: String,
-  pub password: String,
-}
-
 pub struct NewUserAddress {
   pub district: String,
   pub village: String,

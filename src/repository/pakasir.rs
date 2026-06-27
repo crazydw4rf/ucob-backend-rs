@@ -3,8 +3,7 @@ use std::borrow::Cow;
 use crate::{
   prelude::*,
   third_party::pakasir::{
-    TransactionCreateRequest, TransactionCreateResponse, TransactionDetailRequest,
-    TransactionDetailResponse,
+    OrderCreateRequest, OrderCreateResponse, OrderDetailRequest, OrderDetailResponse,
   },
 };
 
@@ -22,10 +21,10 @@ impl PakasirRepository {
     Self { client }
   }
 
-  pub async fn create_transaction(
+  pub async fn create_order<'a>(
     &self,
-    data: TransactionCreateRequest,
-  ) -> Result<TransactionCreateResponse> {
+    data: OrderCreateRequest<'a>,
+  ) -> Result<OrderCreateResponse> {
     let res = self
       .client
       .post(format!(
@@ -45,15 +44,15 @@ impl PakasirRepository {
     let res = res.text().await?;
 
     let v: serde_json::Value = serde_json::from_str(&res)?;
-    let decoded: TransactionCreateResponse = serde_json::from_value(v["payment"].clone())?;
+    let decoded: OrderCreateResponse = serde_json::from_value(v["payment"].clone())?;
 
     Ok(decoded)
   }
 
-  pub async fn get_transaction_detail(
+  pub async fn get_transaction_detail<'a>(
     &self,
-    data: TransactionDetailRequest,
-  ) -> Result<TransactionDetailResponse> {
+    data: OrderDetailRequest<'a>,
+  ) -> Result<OrderDetailResponse> {
     let res = self
       .client
       .get("https://app.pakasir.com/api/transactiondetail")
@@ -69,7 +68,9 @@ impl PakasirRepository {
     let res = res.text().await?;
 
     let v: serde_json::Value = serde_json::from_str(&res)?;
-    let decoded: TransactionDetailResponse = serde_json::from_value(v["transaction"].clone())?;
+    let decoded: OrderDetailResponse = serde_json::from_value(v["transaction"].clone())?;
+
+    tracing::debug!("{:?}", &decoded);
 
     Ok(decoded)
   }
@@ -93,8 +94,9 @@ impl PakasirRepository {
 mod tests {
   use crate::{
     config::{init_config, init_tracing},
+    prelude::PROJECT_NAME,
     repository::pakasir::PakasirRepository,
-    third_party::pakasir::{TransactionCreateRequest, TransactionDetailRequest},
+    third_party::pakasir::{OrderCreateRequest, OrderDetailRequest},
   };
 
   #[tokio::test]
@@ -105,12 +107,12 @@ mod tests {
     let cfg = init_config()?;
 
     let foo = repo
-      .create_transaction(TransactionCreateRequest {
-        project: cfg.env.pakasir_project_name.clone(),
-        api_key: cfg.env.pakasir_api_key.clone(),
+      .create_order(OrderCreateRequest {
+        project: PROJECT_NAME,
+        api_key: cfg.env.pakasir_api_key.as_ref(),
         order_id: "DAPURBUR-1007".to_string(),
         amount: 10000,
-        method: "qris".to_string(),
+        method: "qris",
       })
       .await?;
 
@@ -127,10 +129,10 @@ mod tests {
     let cfg = init_config()?;
 
     let foo = repo
-      .get_transaction_detail(TransactionDetailRequest {
-        project: cfg.env.pakasir_project_name.clone(),
-        api_key: cfg.env.pakasir_api_key.clone(),
-        order_id: "DAPURBUR-1006".to_string(),
+      .get_transaction_detail(OrderDetailRequest {
+        project: PROJECT_NAME,
+        api_key: cfg.env.pakasir_api_key.as_ref(),
+        order_id: "DAPURBUR-1006",
         amount: 10000,
       })
       .await?;

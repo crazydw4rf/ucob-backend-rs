@@ -9,8 +9,11 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::{
   config::AppState,
   docs::ApiDoc,
-  repository::{TransactionRepository, user::UserRepository},
-  services::{transaction::TransactionService, user::UserService},
+  repository::{
+    OilRepository, PakasirRepository, PaymentRepository, StorageRepository, TransactionRepository,
+    user::UserRepository,
+  },
+  services::{OilService, StorageService, transaction::TransactionService, user::UserService},
 };
 
 mod config;
@@ -18,7 +21,6 @@ mod crypto;
 mod delivery;
 mod docs;
 mod error;
-mod helper;
 mod models;
 mod prelude;
 mod repository;
@@ -32,16 +34,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   init_tracing();
   let cfg = init_config()?;
   let db_conn = init_db(&cfg).await?;
+  let s3 = init_storage_service(&cfg).await;
+  let reqwest_client = reqwest::Client::new();
   let app_bind = cfg.env.app_bind.clone();
 
   let user_repo = Arc::new(UserRepository::new(db_conn.clone()));
   let transaction_repo = Arc::new(TransactionRepository::new(db_conn.clone()));
-  // let oil_repo = Arc::new(OilTransactionRepository::new(db_conn.clone()));
+  let payment_repo = Arc::new(PaymentRepository::new(db_conn.clone()));
+  let storage_repo = Arc::new(StorageRepository::new(s3));
+  let oil_repo = Arc::new(OilRepository::new(db_conn.clone()));
+  let pakasir_repo = Arc::new(PakasirRepository::new(reqwest_client));
 
   let state = AppState {
     config: Arc::new(cfg),
     user_service: Arc::new(UserService::new(Arc::clone(&user_repo))),
-    transaction_service: Arc::new(TransactionService::new(Arc::clone(&transaction_repo))),
+    oil_service: Arc::new(OilService::new(Arc::clone(&oil_repo))),
+    storage_service: Arc::new(StorageService::new(Arc::clone(&storage_repo))),
+    transaction_service: Arc::new(TransactionService::new(
+      Arc::clone(&transaction_repo),
+      Arc::clone(&payment_repo),
+      Arc::clone(&pakasir_repo),
+    )),
   };
 
   let router = delivery::http::routes::init_router(state.clone());
@@ -71,4 +84,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   .await?;
 
   Ok(())
+}
+
+#[test]
+fn foo() {
+  let x: i32 = 2000;
+  let y: f32 = 10.5;
+
+  let z = (x as f32 * y) as i32;
+
+  dbg!(z);
+
+  assert_eq!(21000i32, z);
 }

@@ -41,7 +41,11 @@ pub async fn user_login(
 
   let tokens = state
     .user_service
-    .login_user(payload.email, payload.password, &state.config)
+    .login_user(
+      payload.email,
+      payload.password,
+      &state.config.env.jwt_secret,
+    )
     .await?;
 
   // TODO: buat fungsi untuk membuat dan menghapus cookie

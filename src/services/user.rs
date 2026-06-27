@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::{
-  config::Config,
   crypto::{Tokens, hash_password, jwt_encode, verify_password},
   models::{NewUser, NewUserAddress, User, UserAddress, UserId},
   repository::UserRepository,
@@ -21,12 +20,17 @@ impl UserService {
     self.user_repo.find_by_id(id).await
   }
 
-  pub async fn login_user(&self, email: String, password: String, cfg: &Config) -> Result<Tokens> {
+  pub async fn login_user(
+    &self,
+    email: String,
+    password: String,
+    jwt_secret: &str,
+  ) -> Result<Tokens> {
     let user = self.user_repo.find_by_email(email).await?;
 
     verify_password(password, user.password.clone().unwrap_or_default())?;
 
-    let tokens = jwt_encode(&user, &cfg.env.jwt_secret)?;
+    let tokens = jwt_encode(&user, jwt_secret)?;
 
     Ok(tokens)
   }
