@@ -1,5 +1,5 @@
 use crate::delivery::http::response::Sanitizer;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use derive_more::From;
 use serde::{Deserialize, Serialize};
 
@@ -27,7 +27,7 @@ pub struct User {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub password: Option<String>,
   pub role: UserRole,
-  pub created_at: Option<NaiveDateTime>,
+  pub created_at: Option<DateTime<Utc>>,
 }
 
 impl Sanitizer for User {

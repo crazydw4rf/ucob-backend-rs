@@ -29,7 +29,7 @@ pub struct Transaction {
   pub payment_method: PaymentMethod,
   pub status: TransactionStatus,
   pub transaction_type: TransactionType,
-  pub created_at: Option<chrono::NaiveDateTime>,
+  pub created_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl Sanitizer for Transaction {}

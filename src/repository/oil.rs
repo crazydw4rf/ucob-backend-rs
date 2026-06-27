@@ -14,9 +14,36 @@ impl OilRepository {
   }
 
   pub async fn create_oil(&self, delta: f32) -> Result<Oil> {
+    let mut tx = self.db.begin().await?;
+    // delta harus berupa bilangan negatif atau positif dengan nilai untuk mengurangi dan menambah stok mimyak
+    let oil_stock = sqlx::query_scalar!("SELECT delta FROM oil ORDER BY created_at DESC LIMIT 1")
+      .fetch_one(&mut *tx)
+      .await;
+
+    let oil_stock = match oil_stock {
+      Ok(o) => o,
+      Err(err) if delta < 0.0 => {
+        tracing::error!("{:?}", err);
+        tx.rollback().await?;
+        return Err(Error::new(
+          "tidak bisa memperbarui stok minyak, belum ada record pada database",
+          ErrorKind::BadRequest,
+        ));
+      }
+      Err(_) => 0.0,
+    };
+
+    let delta = oil_stock + delta;
+
+    tracing::debug!("oil stock from: {} to {}", oil_stock, delta);
+
     let oil = sqlx::query_as!(Oil, "INSERT INTO oil (delta) VALUES($1) RETURNING *", delta)
-      .fetch_one(&self.db)
+      .fetch_one(&mut *tx)
       .await?;
+
+    tx.commit().await?;
+
+    tracing::debug!("{:?}", &oil);
 
     Ok(oil)
   }

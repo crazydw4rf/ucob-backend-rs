@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Serialize, sqlx::FromRow, utoipa::ToSchema)]
 pub struct Oil {
   pub delta: f32,
-  pub created_at: Option<chrono::NaiveDateTime>,
+  pub created_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl Sanitizer for Oil {}
@@ -13,7 +13,7 @@ impl Sanitizer for Oil {}
 pub struct OilPrices {
   pub price_type: PriceType,
   pub price_per_liter: i32,
-  pub created_at: Option<chrono::NaiveDateTime>,
+  pub created_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl Sanitizer for OilPrices {}

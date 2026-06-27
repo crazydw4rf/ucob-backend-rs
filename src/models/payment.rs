@@ -21,8 +21,8 @@ pub struct Payment {
   pub amount: i32,
   pub order_id: String,
   pub status: PaymentStatus,
-  pub created_at: Option<chrono::NaiveDateTime>,
-  pub completed_at: Option<chrono::NaiveDateTime>,
+  pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+  pub completed_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl Sanitizer for Payment {}
