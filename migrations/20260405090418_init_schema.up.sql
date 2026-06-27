@@ -11,7 +11,7 @@ CREATE TABLE users (
   username TEXT NOT NULL,
   role user_role NOT NULL DEFAULT 'User',
   password TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE address (
@@ -32,7 +32,7 @@ CREATE TABLE transaction (
   payment_method payment_method NOT NULL DEFAULT 'QRIS'::payment_method,
   status transaction_status NOT NULL DEFAULT 'Pending'::transaction_status,
   transaction_type transaction_type NOT NULL DEFAULT 'Purchase'::transaction_type,
-  created_at TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
 
   FOREIGN KEY(user_id) REFERENCES users(id)
 );
@@ -45,7 +45,7 @@ CREATE TABLE transaction_details (
   address_details TEXT NOT NULL, -- nama jalan, nomor rumah, nama gang, dll
   sale_image_url TEXT NULL,
 
-  created_at TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
   FOREIGN KEY(transaction_id) REFERENCES transaction(id)
 );
 
@@ -55,19 +55,19 @@ CREATE TABLE payment (
   amount INT NOT NULL,
   order_id VARCHAR(64) UNIQUE NOT NULL,
   status payment_status NOT NULL DEFAULT 'Pending'::payment_status,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  completed_at TIMESTAMP NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ NULL,
 
   FOREIGN KEY(transaction_id) REFERENCES transaction(id)
 );
 
 CREATE TABLE oil (
   delta REAL NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE oil_prices (
   price_type price_type NOT NULL DEFAULT 'Buy'::price_type,
   price_per_liter INT NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
