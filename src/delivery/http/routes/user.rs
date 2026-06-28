@@ -1,5 +1,5 @@
 use axum::{
-  extract::{Extension, State},
+  extract::{Extension, Path, State},
   http::StatusCode,
 };
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -13,7 +13,7 @@ use crate::{
     response::{ErrorResponse, FromStruct},
     routes::RouterPair,
   },
-  models::{NewUser, NewUserAddress, UpdateUserAddress, User, UserAddress},
+  models::{NewUser, NewUserAddress, UpdateUserAddress, User, UserAddress, UserId},
   types::{JsonPayload, Result},
 };
 
@@ -22,6 +22,7 @@ pub fn router() -> RouterPair<AppState> {
     .with_protected(
       OpenApiRouter::new()
         .routes(routes!(user_me))
+        .routes(routes!(user_get_by_id))
         .routes(routes!(address_create, address_update))
         .routes(routes!(address_find)),
     )
@@ -154,4 +155,25 @@ async fn address_find(
   let res = state.user_service.find_address(info.id).await?;
 
   Ok((FromStruct(res), StatusCode::OK).into())
+}
+
+#[utoipa::path(
+  get,
+  description = "Mengambil data pengguna berdasarkan ID",
+  path = "/{id}",
+  tag = "user",
+  params(
+    ("id" = UserId, Path, description = "ID Pengguna")
+  ),
+  responses(
+    (status = 200, body = HttpResponse<User>),
+    (status = 500, body = ErrorResponse)
+  )
+)]
+async fn user_get_by_id(
+  State(state): State<AppState>,
+  Path(user_id): Path<UserId>,
+) -> Result<HttpResponse<User>> {
+  let user = state.user_service.find_user_by_id(user_id).await?;
+  Ok((FromStruct(user), StatusCode::OK).into())
 }
