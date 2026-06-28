@@ -32,7 +32,7 @@ impl TransactionRepository {
     };
 
     // mengambil harga minyak saat ini
-    let price_per_liter: i32 = sqlx::query_scalar!(
+    let price_per_liter: i32 =  sqlx::query_scalar!(
       "SELECT price_per_liter FROM oil_prices WHERE price_type = $1 ORDER BY created_at DESC LIMIT 1",
       price_type as PriceType
     )
@@ -40,12 +40,21 @@ impl TransactionRepository {
     .await?;
 
     // mengurangi stok minyak
-    let oil_volume_rest = sqlx::query_scalar!(
-      "INSERT INTO oil(delta) VALUES((SELECT delta FROM oil ORDER BY created_at DESC LIMIT 1) - $1) RETURNING delta",
-      data.oil_volume
-    )
-    .fetch_one(&mut *tx)
-    .await?;
+    let oil_volume_rest = if data.transaction_type == TransactionType::Purchase {
+      sqlx::query_scalar!(
+            "INSERT INTO oil(delta) VALUES((SELECT delta FROM oil ORDER BY created_at DESC LIMIT 1) - $1) RETURNING delta",
+            data.oil_volume
+          )
+          .fetch_one(&mut *tx)
+          .await?
+    } else {
+      sqlx::query_scalar!(
+            "INSERT INTO oil(delta) VALUES((SELECT delta FROM oil ORDER BY created_at DESC LIMIT 1) + $1) RETURNING delta",
+            data.oil_volume
+          )
+          .fetch_one(&mut *tx)
+          .await?
+    };
 
     // cek jika stock minyak kurang dari 0 atau menghasilkan angka negatif setelah pengurangan stok minyak
     if oil_volume_rest < 0.0 {
@@ -139,7 +148,7 @@ impl TransactionRepository {
     transaction_id: TransactionId,
   ) -> Result<TransactionDetails> {
     let details =
-      sqlx::query_as("SELECT * FROM transaction_details d JOIN transaction t ON t.user_id = $2 WHERE d.id = $1 LIMIT 1")
+      sqlx::query_as("SELECT d.id,d.transaction_id,d.address_district,d.address_village,d.address_details,d.sale_image_url FROM transaction_details d JOIN transaction t ON d.transaction_id = t.id WHERE d.transaction_id = $1 AND t.user_id = $2 LIMIT 1")
         .bind(transaction_id)
         .bind(user_id)
         .fetch_one(&self.db)
@@ -159,6 +168,22 @@ impl TransactionRepository {
     )
     .bind(transaction_status)
     .bind(user_id)
+    .bind(transaction_id)
+    .fetch_one(&self.db)
+    .await?;
+
+    Ok(transaction)
+  }
+
+  pub async fn update_transaction_status_admin(
+    &self,
+    transaction_id: TransactionId,
+    transaction_status: TransactionStatus,
+  ) -> Result<Transaction> {
+    let transaction = sqlx::query_as(
+      "UPDATE transaction SET status = $1 WHERE id = $2 RETURNING *",
+    )
+    .bind(transaction_status)
     .bind(transaction_id)
     .fetch_one(&self.db)
     .await?;

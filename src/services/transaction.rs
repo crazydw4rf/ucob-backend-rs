@@ -131,6 +131,17 @@ impl TransactionService {
       .await
   }
 
+  pub async fn update_transaction_status_admin(
+    &self,
+    transaction_id: TransactionId,
+    transaction_status: TransactionStatus,
+  ) -> Result<Transaction> {
+    self
+      .transaction_repo
+      .update_transaction_status_admin(transaction_id, transaction_status)
+      .await
+  }
+
   pub async fn get_payment_by_transaction_id(
     &self,
     transaction_id: TransactionId,

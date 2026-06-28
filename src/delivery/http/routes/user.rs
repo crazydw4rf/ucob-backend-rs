@@ -8,12 +8,12 @@ use crate::{
   config::AppState,
   delivery::http::{
     HttpResponse,
-    dto::{UserAddressCreate, UserCreate},
+    dto::{UserAddressCreate, UserAddressUpdate, UserCreate},
     middleware::auth::UserInfo,
     response::{ErrorResponse, FromStruct},
     routes::RouterPair,
   },
-  models::{NewUser, NewUserAddress, User, UserAddress},
+  models::{NewUser, NewUserAddress, UpdateUserAddress, User, UserAddress},
   types::{JsonPayload, Result},
 };
 
@@ -22,7 +22,7 @@ pub fn router() -> RouterPair<AppState> {
     .with_protected(
       OpenApiRouter::new()
         .routes(routes!(user_me))
-        .routes(routes!(address_create))
+        .routes(routes!(address_create, address_update))
         .routes(routes!(address_find)),
     )
     .with_public(OpenApiRouter::new().routes(routes!(user_create)))
@@ -96,6 +96,38 @@ async fn address_create(
     .create_address(
       info.id,
       NewUserAddress {
+        district: payload.district,
+        village: payload.village,
+        details: payload.details,
+      },
+    )
+    .await?;
+
+  Ok((FromStruct(res), StatusCode::OK).into())
+}
+
+#[utoipa::path(
+  patch,
+  description = "Memperbarui alamat pengguna",
+  path = "/address",
+  tag = "user",
+  request_body = UserAddressUpdate,
+  responses(
+    (status = 200, body = HttpResponse<UserAddress>),
+    (status = 500, body = ErrorResponse)
+))]
+async fn address_update(
+  state: State<AppState>,
+  Extension(info): Extension<UserInfo>,
+  payload: JsonPayload<UserAddressUpdate>,
+) -> Result<HttpResponse<UserAddress>> {
+  let payload = payload?.0;
+
+  let res = state
+    .user_service
+    .update_address(
+      info.id,
+      UpdateUserAddress {
         district: payload.district,
         village: payload.village,
         details: payload.details,

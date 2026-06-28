@@ -193,13 +193,12 @@ pub async fn get_payment(
 pub async fn update_transaction_status(
   state: State<AppState>,
   Path(transaction_id): Path<TransactionId>,
-  Extension(user_info): Extension<UserInfo>,
   payload: JsonPayload<TransactionStatusUpdateRequest>,
 ) -> Result<HttpResponse<Transaction>> {
   let payload = payload?.0;
   let transaction = state
     .transaction_service
-    .update_transaction_status(user_info.id, transaction_id, payload.transaction_status)
+    .update_transaction_status_admin(transaction_id, payload.transaction_status)
     .await?;
 
   Ok((FromStruct(transaction), StatusCode::OK).into())

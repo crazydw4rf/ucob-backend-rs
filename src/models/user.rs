@@ -57,3 +57,9 @@ pub struct NewUserAddress {
   pub village: String,
   pub details: String,
 }
+
+pub struct UpdateUserAddress {
+  pub district: Option<String>,
+  pub village: Option<String>,
+  pub details: Option<String>,
+}

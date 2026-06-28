@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
   crypto::{Tokens, hash_password, jwt_encode, verify_password},
-  models::{NewUser, NewUserAddress, User, UserAddress, UserId},
+  models::{NewUser, NewUserAddress, UpdateUserAddress, User, UserAddress, UserId},
   repository::UserRepository,
   types::Result,
 };
@@ -51,5 +51,9 @@ impl UserService {
 
   pub async fn find_address(&self, user_id: UserId) -> Result<UserAddress> {
     self.user_repo.find_address_by_user_id(user_id).await
+  }
+
+  pub async fn update_address(&self, user_id: UserId, data: UpdateUserAddress) -> Result<UserAddress> {
+    self.user_repo.update_address(user_id, data).await
   }
 }

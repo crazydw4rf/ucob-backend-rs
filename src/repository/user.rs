@@ -3,7 +3,7 @@ use tracing::instrument;
 
 use crate::{
   models::{
-    NewUser, NewUserAddress, UserAddress, UserId,
+    NewUser, NewUserAddress, UpdateUserAddress, UserAddress, UserId,
     user::{User, UserRole},
   },
   types::Result,
@@ -89,5 +89,18 @@ impl UserRepository {
     Ok(address)
   }
 
-  // TODO: update alamat
+  pub async fn update_address(&self, user_id: UserId, addr: UpdateUserAddress) -> Result<UserAddress> {
+    let address = sqlx::query_as!(
+      UserAddress,
+      "UPDATE address SET district = COALESCE($2, district), village = COALESCE($3, village), details = COALESCE($4, details) WHERE user_id = $1 RETURNING id,district,village,details",
+      user_id.0,
+      addr.district,
+      addr.village,
+      addr.details
+    )
+    .fetch_one(&self.db)
+    .await?;
+
+    Ok(address)
+  }
 }

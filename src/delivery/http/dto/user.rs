@@ -20,3 +20,10 @@ pub struct UserAddressCreate {
   pub village: String,
   pub details: String,
 }
+
+#[derive(Default, Debug, Deserialize, ToSchema)]
+pub struct UserAddressUpdate {
+  pub district: Option<String>,
+  pub village: Option<String>,
+  pub details: Option<String>,
+}
